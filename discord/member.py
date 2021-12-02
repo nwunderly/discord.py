@@ -209,13 +209,15 @@ class Member(discord.abc.Messageable, _BaseUser):
     """
 
     __slots__ = ('_roles', 'joined_at', 'premium_since', '_client_status',
-                 'activities', 'guild', 'pending', 'nick', '_user', '_state')
+                 'activities', 'guild', 'pending', 'nick', '_user', '_state',
+                 'timeout')
 
     def __init__(self, *, data, guild, state):
         self._state = state
         self._user = state.store_user(data['user'])
         self.guild = guild
         self.joined_at = utils.parse_time(data.get('joined_at'))
+        self.timeout = utils.parse_time(data.get('communication_disabled_until'))
         self.premium_since = utils.parse_time(data.get('premium_since'))
         self._update_roles(data)
         self._client_status = {
@@ -249,6 +251,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
     def _update_from_message(self, data):
         self.joined_at = utils.parse_time(data.get('joined_at'))
+        self.timeout = utils.parse_time(data.get('communication_disabled_until'))
         self.premium_since = utils.parse_time(data.get('premium_since'))
         self._update_roles(data)
         self.nick = data.get('nick', None)
@@ -282,6 +285,7 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         self._roles = utils.SnowflakeList(member._roles, is_sorted=True)
         self.joined_at = member.joined_at
+        self.timeout = member.timeout
         self.premium_since = member.premium_since
         self._client_status = member._client_status.copy()
         self.guild = member.guild
@@ -312,6 +316,11 @@ class Member(discord.abc.Messageable, _BaseUser):
 
         try:
             self.pending = data['pending']
+        except KeyError:
+            pass
+
+        try:
+            self.timeout = data['communication_disabled_until']
         except KeyError:
             pass
 
